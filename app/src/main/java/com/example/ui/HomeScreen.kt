@@ -320,9 +320,17 @@ fun HomeScreen(
                 }
             }
 
-            // 6. Sri Lankan Spice Route Wisdom / Inspiring Quotes Card
+            // Interactive Ceyvana Zen Aroma Visualizer Animation Card
             AnimatedVisibility(
                 visible = visibleIndex >= 5,
+                enter = fadeIn(animationSpec = spring()) + slideInVertically(initialOffsetY = { 60 })
+            ) {
+                CeyvanaZenAromaVisualizer()
+            }
+
+            // 6. Sri Lankan Spice Route Wisdom / Inspiring Quotes Card
+            AnimatedVisibility(
+                visible = visibleIndex >= 6,
                 enter = fadeIn(animationSpec = spring()) + slideInVertically(initialOffsetY = { 60 })
             ) {
                 Card(
