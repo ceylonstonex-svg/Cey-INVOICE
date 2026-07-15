@@ -1,0 +1,6 @@
+{
+  "name": "Ceyvana",
+  "description": "A native Android invoice manager with local Room persistence, real-time total calculations, native PDF generation, sharing, and cloud sync checks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
