@@ -228,6 +228,10 @@ class InvoiceViewModel(
         }
     }
 
+    suspend fun saveInvoiceForPos(invoice: InvoiceEntity, items: List<LineItemEntity>): Int {
+        return repository.saveInvoice(invoice, items)
+    }
+
     fun deleteInvoice(invoiceWithLineItems: InvoiceWithLineItems) {
         viewModelScope.launch {
             repository.deleteInvoice(invoiceWithLineItems)

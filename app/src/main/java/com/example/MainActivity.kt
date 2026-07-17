@@ -437,7 +437,7 @@ fun InvoiceListScreen(viewModel: InvoiceViewModel) {
     val googleAccount by viewModel.googleAccount.collectAsState()
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf(0) } // 0 = Home, 1 = Invoices, 2 = Dashboard, 3 = Reports, 4 = Products
+    var selectedTab by remember { mutableStateOf(0) } // 0 = Home, 1 = Invoices, 2 = Dashboard, 3 = Reports, 4 = Products, 5 = POS
     var showGlobalCalculator by remember { mutableStateOf(false) }
 
     val filteredInvoices = remember(invoices, searchQuery) {
@@ -490,6 +490,12 @@ fun InvoiceListScreen(viewModel: InvoiceViewModel) {
                     icon = { Icon(Icons.Default.Inventory, contentDescription = "Products") },
                     label = { Text("Products") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 5,
+                    onClick = { selectedTab = 5 },
+                    icon = { Icon(Icons.Default.Storefront, contentDescription = "POS") },
+                    label = { Text("POS") }
+                )
             }
         },
         floatingActionButton = {
@@ -541,6 +547,9 @@ fun InvoiceListScreen(viewModel: InvoiceViewModel) {
                 }
                 4 -> {
                     ProductScreen(viewModel = viewModel)
+                }
+                5 -> {
+                    PosScreen(viewModel = viewModel)
                 }
             }
 

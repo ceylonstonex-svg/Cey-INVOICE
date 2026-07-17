@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -177,8 +180,65 @@ fun StandardCalculatorView() {
     var expression by remember { mutableStateOf("") }
     var result by remember { mutableStateOf("0") }
     var history by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isResultEvaluated by remember { mutableStateOf(false) }
+
+    // Live real-time result preview as the user types
+    val liveResult = remember(expression) {
+        if (expression.isBlank()) {
+            ""
+        } else {
+            try {
+                var cleanExpr = expression
+                while (cleanExpr.isNotEmpty() && "+-×÷".contains(cleanExpr.last())) {
+                    cleanExpr = cleanExpr.dropLast(1)
+                }
+                if (cleanExpr.isBlank()) {
+                    ""
+                } else {
+                    val computed = evaluateSimpleExpression(cleanExpr)
+                    if (computed == "Error" || computed == "Div by 0") "" else computed
+                }
+            } catch (e: Exception) {
+                ""
+            }
+        }
+    }
 
     fun onKeyPress(key: String) {
+        if (isResultEvaluated) {
+            when (key) {
+                "C" -> {
+                    expression = ""
+                    result = "0"
+                    isResultEvaluated = false
+                }
+                "⌫" -> {
+                    expression = ""
+                    isResultEvaluated = false
+                }
+                "=" -> {
+                    // Do nothing
+                }
+                "+", "-", "×", "÷" -> {
+                    expression = result + key
+                    isResultEvaluated = false
+                }
+                "%" -> {
+                    expression = result + key
+                    isResultEvaluated = false
+                }
+                "." -> {
+                    expression = "0."
+                    isResultEvaluated = false
+                }
+                else -> { // Numbers 0-9
+                    expression = key
+                    isResultEvaluated = false
+                }
+            }
+            return
+        }
+
         when (key) {
             "C" -> {
                 expression = ""
@@ -196,23 +256,46 @@ fun StandardCalculatorView() {
                         history = (history + "$expression = $computed").takeLast(3)
                         result = computed
                         expression = computed
+                        isResultEvaluated = true
                     } catch (e: Exception) {
                         result = "Error"
                     }
                 }
             }
             "+", "-", "×", "÷" -> {
-                if (expression.isNotEmpty() && !"+-×÷".contains(expression.last())) {
-                    expression += key
-                } else if (expression.isEmpty() && key == "-") {
+                if (expression.isNotEmpty()) {
+                    val lastChar = expression.last()
+                    if ("+-×÷%".contains(lastChar)) {
+                        expression = expression.dropLast(1) + key
+                    } else {
+                        expression += key
+                    }
+                } else if (key == "-") {
                     expression += key
                 }
             }
-            else -> {
-                if (result == "Error") {
-                    result = "0"
+            "%" -> {
+                if (expression.isNotEmpty() && !"+-×÷%".contains(expression.last())) {
+                    expression += key
                 }
-                expression += key
+            }
+            "." -> {
+                val tokens = expression.split(Regex("[+\\-×÷%]"))
+                val lastToken = tokens.lastOrNull() ?: ""
+                if (!lastToken.contains(".")) {
+                    if (lastToken.isEmpty()) {
+                        expression += "0."
+                    } else {
+                        expression += "."
+                    }
+                }
+            }
+            else -> { // Numbers 0-9
+                if (expression == "0") {
+                    expression = key
+                } else {
+                    expression += key
+                }
             }
         }
     }
@@ -261,7 +344,7 @@ fun StandardCalculatorView() {
                     // Formula Expression Input
                     Text(
                         text = expression.ifEmpty { "Enter equation" },
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         color = if (expression.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,
                         maxLines = 1,
@@ -269,10 +352,12 @@ fun StandardCalculatorView() {
                         fontWeight = FontWeight.Medium
                     )
 
-                    // Large Result Output
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Large Result Output (shows live real-time preview if typing, otherwise shows final result)
                     Text(
-                        text = result,
-                        fontSize = 32.sp,
+                        text = if (liveResult.isNotEmpty() && expression != liveResult) liveResult else result,
+                        fontSize = 36.sp,
                         fontWeight = FontWeight.Bold,
                         color = AccentGold,
                         textAlign = TextAlign.End,
@@ -343,7 +428,8 @@ fun CalculatorButton(
         else -> MaterialTheme.colorScheme.onSurface
     }
 
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.92f else 1.0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
@@ -353,7 +439,10 @@ fun CalculatorButton(
     Card(
         modifier = modifier
             .scale(scale)
-            .clickable {
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current
+            ) {
                 onClick()
             },
         shape = RoundedCornerShape(16.dp),
@@ -675,61 +764,104 @@ fun SpiceTradeCalculatorView() {
     }
 }
 
-// Simple Helper to evaluate strings like "10+20" or "40×1.5"
+// Highly accurate mathematical expression parser with standard operator precedence
 fun evaluateSimpleExpression(expr: String): String {
-    // Standardize symbol multipliers
-    var cleaned = expr.replace("×", "*").replace("÷", "/")
+    val cleaned = expr.replace("×", "*").replace("÷", "/")
     if (cleaned.isBlank()) return "0"
 
-    try {
-        // Simple manual state-machine parsing for 1 level of binary operation to keep lightweight
-        // Supports basic operations sequential execution from left-to-right
-        val tokens = mutableListOf<String>()
-        var currentNum = StringBuilder()
+    return try {
+        class Parser(val str: String) {
+            var pos = -1
+            var ch = 0
 
-        for (char in cleaned) {
-            if ("+-*/%".contains(char)) {
-                if (currentNum.isNotEmpty()) {
-                    tokens.add(currentNum.toString())
-                    currentNum = StringBuilder()
+            fun nextChar() {
+                ch = if (++pos < str.length) str[pos].code else -1
+            }
+
+            fun eat(charToEat: Int): Boolean {
+                while (ch == ' '.code) nextChar()
+                if (ch == charToEat) {
+                    nextChar()
+                    return true
                 }
-                tokens.add(char.toString())
-            } else {
-                currentNum.append(char)
+                return false
+            }
+
+            fun parse(): Double {
+                nextChar()
+                val x = parseExpression()
+                if (pos < str.length) throw RuntimeException("Unexpected character: " + ch.toChar())
+                return x
+            }
+
+            fun parseExpression(): Double {
+                var x = parseTerm()
+                while (true) {
+                    if (eat('+'.code)) x += parseTerm()
+                    else if (eat('-'.code)) x -= parseTerm()
+                    else return x
+                }
+            }
+
+            fun parseTerm(): Double {
+                var x = parseFactor()
+                while (true) {
+                    if (eat('*'.code)) x *= parseFactor()
+                    else if (eat('/'.code)) {
+                        val divisor = parseFactor()
+                        if (divisor == 0.0) throw ArithmeticException("Division by zero")
+                        x /= divisor
+                    } else return x
+                }
+            }
+
+            fun parseFactor(): Double {
+                if (eat('+'.code)) return parseFactor()
+                if (eat('-'.code)) return -parseFactor()
+
+                var x: Double
+                val startPos = this.pos
+                if (eat('('.code)) {
+                    x = parseExpression()
+                    eat(')'.code)
+                } else if ((ch >= '0'.code && ch <= '9'.code) || ch == '.'.code) {
+                    while ((ch >= '0'.code && ch <= '9'.code) || ch == '.'.code) nextChar()
+                    val numStr = str.substring(startPos, this.pos)
+                    x = numStr.toDoubleOrNull() ?: throw RuntimeException("Invalid number: $numStr")
+                } else {
+                    throw RuntimeException("Unexpected character: " + ch.toChar())
+                }
+
+                while (eat('%'.code)) {
+                    x /= 100.0
+                }
+
+                return x
             }
         }
-        if (currentNum.isNotEmpty()) {
-            tokens.add(currentNum.toString())
-        }
 
-        if (tokens.isEmpty()) return "0"
-
-        // Handle negative prefix or simple arithmetic
-        var runningValue = tokens[0].toDoubleOrNull() ?: 0.0
-        var idx = 1
-        while (idx < tokens.size - 1) {
-            val op = tokens[idx]
-            val nextValStr = tokens[idx + 1]
-            val nextVal = nextValStr.toDoubleOrNull() ?: 0.0
-
-            when (op) {
-                "+" -> runningValue += nextVal
-                "-" -> runningValue -= nextVal
-                "*" -> runningValue *= nextVal
-                "/" -> if (nextVal != 0.0) runningValue /= nextVal else return "Div by 0"
-                "%" -> runningValue = (runningValue * nextVal) / 100.0
-            }
-            idx += 2
-        }
-
-        // Format neatly, dropping trailing .0
-        return if (runningValue % 1 == 0.0) {
-            runningValue.toInt().toString()
+        val result = Parser(cleaned).parse()
+        if (result.isInfinite() || result.isNaN()) {
+            "Error"
         } else {
-            String.format(Locale.US, "%.4f", runningValue).trimEnd('0').trimEnd('.')
+            if (result % 1 == 0.0) {
+                result.toLong().toString()
+            } else {
+                val formatted = String.format(Locale.US, "%.8f", result)
+                var idx = formatted.length - 1
+                while (idx >= 0 && formatted[idx] == '0') {
+                    idx--
+                }
+                if (idx >= 0 && formatted[idx] == '.') {
+                    idx--
+                }
+                formatted.substring(0, idx + 1)
+            }
         }
+    } catch (e: ArithmeticException) {
+        "Div by 0"
     } catch (e: Exception) {
-        return "Error"
+        "Error"
     }
 }
 

@@ -316,6 +316,19 @@ fun HomeScreen(
                                 onClick = { onNavigateToTab(2) }
                             )
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            QuickActionCard(
+                                title = "සජීවී විකුණුම් (POS System)",
+                                description = "Instant spice packages checkout & bill printing",
+                                icon = Icons.Default.Storefront,
+                                tintColor = AccentGold,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigateToTab(5) }
+                            )
+                        }
                     }
                 }
             }
