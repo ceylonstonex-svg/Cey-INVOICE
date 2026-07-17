@@ -38,16 +38,47 @@ class InvoiceViewModel(
                 val current = repository.allProducts.first()
                 if (current.isEmpty()) {
                     val defaults = listOf(
-                        ProductEntity(name = "Cinnamon", pricePerGram = 15.0),
-                        ProductEntity(name = "Black Pepper", pricePerGram = 8.0),
-                        ProductEntity(name = "Cardamom", pricePerGram = 35.0),
-                        ProductEntity(name = "Cloves", pricePerGram = 18.0),
-                        ProductEntity(name = "Nutmeg", pricePerGram = 20.0)
+                        ProductEntity(name = "Cinnamon Premium (True Cinnamon)", pricePerGram = 15.0, sku = "CIN-M01", barcode = "4790001001234", category = "Cinnamon", costPrice = 10.0, wholesalePrice = 13.0, retailPrice = 15.0, currentStock = 250.0, reorderLevel = 20.0, batchNumber = "CIN2607A", expiryDate = "2028-07-17"),
+                        ProductEntity(name = "Black Pepper (Matale Organic)", pricePerGram = 8.0, sku = "PEP-ORG-02", barcode = "4790001001241", category = "Pepper", costPrice = 5.0, wholesalePrice = 7.0, retailPrice = 8.0, currentStock = 450.0, reorderLevel = 50.0, batchNumber = "PEP2607B", expiryDate = "2028-06-30"),
+                        ProductEntity(name = "Cardamom Green (Ceylon Giant)", pricePerGram = 35.0, sku = "CAR-G03", barcode = "4790001001258", category = "Cardamom", costPrice = 25.0, wholesalePrice = 30.0, retailPrice = 35.0, currentStock = 8.0, reorderLevel = 15.0, batchNumber = "CAR2607C", expiryDate = "2029-01-15"),
+                        ProductEntity(name = "Cloves Handpicked (Kandy Quality)", pricePerGram = 18.0, sku = "CLV-K04", barcode = "4790001001265", category = "Cloves", costPrice = 12.0, wholesalePrice = 16.0, retailPrice = 18.0, currentStock = 120.0, reorderLevel = 10.0, batchNumber = "CLV2607D", expiryDate = "2028-09-20"),
+                        ProductEntity(name = "Nutmeg Whole (With Mace)", pricePerGram = 20.0, sku = "NUT-M05", barcode = "4790001001272", category = "Nutmeg", costPrice = 14.0, wholesalePrice = 18.0, retailPrice = 20.0, currentStock = 85.0, reorderLevel = 12.0, batchNumber = "NUT2607E", expiryDate = "2027-12-31")
                     )
                     defaults.forEach { repository.insertProduct(it) }
                 }
+
+                // Default Customers
+                val currentCustomers = repository.allCustomers.first()
+                if (currentCustomers.isEmpty()) {
+                    repository.insertCustomer(CustomerEntity(name = "Ceylon Spices Palace", phone = "+94771122334", email = "palace@ceylonspices.com", address = "Galle Face, Colombo 03", creditLimit = 75000.0, loyaltyPoints = 420))
+                    repository.insertCustomer(CustomerEntity(name = "Organic Foods Export Ltd", phone = "+94112233445", email = "procurement@organicfoods.lk", address = "Kaduwela Road, Malabe", creditLimit = 150000.0, loyaltyPoints = 1250))
+                    repository.insertCustomer(CustomerEntity(name = "Ranjan Store Owners", phone = "+94759988776", email = "ranjanstores@gmail.com", address = "Main Street, Pettah", creditLimit = 30000.0, loyaltyPoints = 95))
+                }
+
+                // Default Suppliers
+                val currentSuppliers = repository.allSuppliers.first()
+                if (currentSuppliers.isEmpty()) {
+                    repository.insertSupplier(SupplierEntity(name = "Matale Organic Farmers Alliance", phone = "+94662233445", email = "alliance@matalespices.lk", company = "Matale Agro Group", dueAmount = 45000.0))
+                    repository.insertSupplier(SupplierEntity(name = "Southern Cinnamon Estates", phone = "+94912288442", email = "estate@southerncinnamon.com", company = "Southern Plantations", dueAmount = 18500.0))
+                }
+
+                // Default Employees
+                val currentEmployees = repository.allEmployees.first()
+                if (currentEmployees.isEmpty()) {
+                    repository.insertEmployee(EmployeeEntity(name = "Kasun Perera", role = "Manager", pin = "1234", isClockedIn = true, attendanceCount = 28))
+                    repository.insertEmployee(EmployeeEntity(name = "Shanika Fernando", role = "Cashier", pin = "4321", isClockedIn = false, attendanceCount = 24))
+                    repository.insertEmployee(EmployeeEntity(name = "Amila Gunasekara", role = "Admin", pin = "0000", isClockedIn = true, attendanceCount = 30))
+                }
+
+                // Default Expenses
+                val currentExpenses = repository.allExpenses.first()
+                if (currentExpenses.isEmpty()) {
+                    repository.insertExpense(ExpenseEntity(description = "Eco-Friendly Packing Boxes (1000 Units)", category = "Packaging", amount = 12500.0, date = System.currentTimeMillis() - (2L * 24 * 60 * 60 * 1000)))
+                    repository.insertExpense(ExpenseEntity(description = "Bio-Organic Estate Certification Renewal", category = "Certifications", amount = 45000.0, date = System.currentTimeMillis() - (15L * 24 * 60 * 60 * 1000)))
+                    repository.insertExpense(ExpenseEntity(description = "Pettah Distribution Courier Charges", category = "Logistics", amount = 4850.0, date = System.currentTimeMillis() - (1L * 24 * 60 * 60 * 1000)))
+                }
             } catch (e: Exception) {
-                _statusMessage.value = "Failed to initialize product defaults"
+                _statusMessage.value = "Failed to initialize ERP default assets: ${e.localizedMessage}"
             }
         }
     }
@@ -68,6 +99,175 @@ class InvoiceViewModel(
         viewModelScope.launch {
             repository.deleteProduct(product)
             _statusMessage.value = "Product '${product.name}' removed from catalog"
+        }
+    }
+
+    // ERP Suite Flows
+    val customersList: StateFlow<List<CustomerEntity>> = repository.allCustomers
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val suppliersList: StateFlow<List<SupplierEntity>> = repository.allSuppliers
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val expensesList: StateFlow<List<ExpenseEntity>> = repository.allExpenses
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val employeesList: StateFlow<List<EmployeeEntity>> = repository.allEmployees
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val inventoryTransactionsList: StateFlow<List<InventoryTransactionEntity>> = repository.allInventoryTransactions
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // ERP Suite Mutation Methods
+    fun saveCustomer(name: String, phone: String, email: String, address: String, creditLimit: Double, loyaltyPoints: Int, id: Int = 0) {
+        viewModelScope.launch {
+            repository.insertCustomer(CustomerEntity(id = id, name = name, phone = phone, email = email, address = address, creditLimit = creditLimit, loyaltyPoints = loyaltyPoints))
+            _statusMessage.value = "Customer '$name' saved successfully"
+        }
+    }
+
+    fun deleteCustomer(customer: CustomerEntity) {
+        viewModelScope.launch {
+            repository.deleteCustomer(customer)
+            _statusMessage.value = "Customer '${customer.name}' deleted"
+        }
+    }
+
+    fun saveSupplier(name: String, phone: String, email: String, company: String, dueAmount: Double, id: Int = 0) {
+        viewModelScope.launch {
+            repository.insertSupplier(SupplierEntity(id = id, name = name, phone = phone, email = email, company = company, dueAmount = dueAmount))
+            _statusMessage.value = "Supplier '$name' saved successfully"
+        }
+    }
+
+    fun deleteSupplier(supplier: SupplierEntity) {
+        viewModelScope.launch {
+            repository.deleteSupplier(supplier)
+            _statusMessage.value = "Supplier '${supplier.name}' deleted"
+        }
+    }
+
+    fun saveExpense(description: String, category: String, amount: Double, date: Long, id: Int = 0) {
+        viewModelScope.launch {
+            repository.insertExpense(ExpenseEntity(id = id, description = description, category = category, amount = amount, date = date))
+            _statusMessage.value = "Expense '$description' added"
+        }
+    }
+
+    fun deleteExpense(expense: ExpenseEntity) {
+        viewModelScope.launch {
+            repository.deleteExpense(expense)
+            _statusMessage.value = "Expense deleted"
+        }
+    }
+
+    fun saveEmployee(name: String, role: String, pin: String = "1234", id: Int = 0) {
+        viewModelScope.launch {
+            repository.insertEmployee(EmployeeEntity(id = id, name = name, role = role, pin = pin))
+            _statusMessage.value = "Employee '$name' registered"
+        }
+    }
+
+    fun deleteEmployee(employee: EmployeeEntity) {
+        viewModelScope.launch {
+            repository.deleteEmployee(employee)
+            _statusMessage.value = "Employee deleted"
+        }
+    }
+
+    fun toggleClockIn(employee: EmployeeEntity) {
+        viewModelScope.launch {
+            val updated = employee.copy(
+                isClockedIn = !employee.isClockedIn,
+                attendanceCount = employee.attendanceCount + if (!employee.isClockedIn) 1 else 0
+            )
+            repository.insertEmployee(updated)
+            _statusMessage.value = if (updated.isClockedIn) "${employee.name} clocked in successfully" else "${employee.name} clocked out successfully"
+        }
+    }
+
+    fun addStockTransaction(productId: Int, type: String, quantity: Double, reason: String) {
+        viewModelScope.launch {
+            repository.insertInventoryTransaction(
+                InventoryTransactionEntity(
+                    productId = productId,
+                    type = type,
+                    quantity = quantity,
+                    date = System.currentTimeMillis(),
+                    reason = reason
+                )
+            )
+            // Retrieve product and update its currentStock
+            productsList.value.find { it.id == productId }?.let { prod ->
+                val newStock = when (type) {
+                    "Stock In", "Return" -> prod.currentStock + quantity
+                    "Stock Out", "Damage", "Adjustment" -> prod.currentStock - quantity
+                    else -> prod.currentStock
+                }
+                repository.updateProduct(prod.copy(currentStock = newStock))
+            }
+            _statusMessage.value = "Stock transaction registered successfully"
+        }
+    }
+
+    fun saveProductExtended(
+        name: String,
+        pricePerGram: Double,
+        sku: String,
+        barcode: String,
+        category: String,
+        costPrice: Double,
+        wholesalePrice: Double,
+        retailPrice: Double,
+        currentStock: Double,
+        reorderLevel: Double,
+        batchNumber: String,
+        expiryDate: String,
+        id: Int = 0
+    ) {
+        viewModelScope.launch {
+            val p = ProductEntity(
+                id = id,
+                name = name,
+                pricePerGram = pricePerGram,
+                sku = sku,
+                barcode = barcode,
+                category = category,
+                costPrice = costPrice,
+                wholesalePrice = wholesalePrice,
+                retailPrice = retailPrice,
+                currentStock = currentStock,
+                reorderLevel = reorderLevel,
+                batchNumber = batchNumber,
+                expiryDate = expiryDate
+            )
+            if (id == 0) {
+                repository.insertProduct(p)
+                _statusMessage.value = "Product '$name' added to catalog"
+            } else {
+                repository.updateProduct(p)
+                _statusMessage.value = "Product '$name' updated"
+            }
         }
     }
 

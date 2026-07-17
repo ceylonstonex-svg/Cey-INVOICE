@@ -46,7 +46,18 @@ data class ProductEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val pricePerGram: Double,
-    val defaultUnit: String = "gram"
+    val defaultUnit: String = "gram",
+    val sku: String = "",
+    val barcode: String = "",
+    val category: String = "Spices",
+    val costPrice: Double = 0.0,
+    val wholesalePrice: Double = 0.0,
+    val retailPrice: Double = 0.0,
+    val currentStock: Double = 100.0,
+    val reorderLevel: Double = 10.0,
+    val batchNumber: String = "",
+    val expiryDate: String = "",
+    val imageUrl: String = ""
 )
 
 data class InvoiceWithLineItems(
@@ -138,10 +149,115 @@ interface InvoiceDao {
     }
 }
 
-@Database(entities = [InvoiceEntity::class, LineItemEntity::class, ProductEntity::class], version = 3, exportSchema = false)
+@Entity(tableName = "customers")
+data class CustomerEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val phone: String,
+    val email: String,
+    val address: String,
+    val creditLimit: Double = 50000.0,
+    val loyaltyPoints: Int = 0
+)
+
+@Entity(tableName = "suppliers")
+data class SupplierEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val phone: String,
+    val email: String,
+    val company: String,
+    val dueAmount: Double = 0.0
+)
+
+@Entity(tableName = "expenses")
+data class ExpenseEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val description: String,
+    val category: String,
+    val amount: Double,
+    val date: Long
+)
+
+@Entity(tableName = "employees")
+data class EmployeeEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val name: String,
+    val role: String, // Admin, Manager, Cashier
+    val pin: String = "1234",
+    val isClockedIn: Boolean = false,
+    val attendanceCount: Int = 0
+)
+
+@Entity(tableName = "inventory_transactions")
+data class InventoryTransactionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val productId: Int,
+    val type: String, // Stock In, Stock Out, Damage, Return, Adjustment
+    val quantity: Double,
+    val date: Long,
+    val reason: String
+)
+
+@Dao
+interface ErpDao {
+    @Query("SELECT * FROM customers ORDER BY name ASC")
+    fun getAllCustomers(): Flow<List<CustomerEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCustomer(customer: CustomerEntity)
+
+    @Delete
+    suspend fun deleteCustomer(customer: CustomerEntity)
+
+    @Query("SELECT * FROM suppliers ORDER BY name ASC")
+    fun getAllSuppliers(): Flow<List<SupplierEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSupplier(supplier: SupplierEntity)
+
+    @Delete
+    suspend fun deleteSupplier(supplier: SupplierEntity)
+
+    @Query("SELECT * FROM expenses ORDER BY date DESC")
+    fun getAllExpenses(): Flow<List<ExpenseEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExpense(expense: ExpenseEntity)
+
+    @Delete
+    suspend fun deleteExpense(expense: ExpenseEntity)
+
+    @Query("SELECT * FROM employees ORDER BY name ASC")
+    fun getAllEmployees(): Flow<List<EmployeeEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEmployee(employee: EmployeeEntity)
+
+    @Delete
+    suspend fun deleteEmployee(employee: EmployeeEntity)
+
+    @Query("SELECT * FROM inventory_transactions ORDER BY date DESC")
+    fun getAllInventoryTransactions(): Flow<List<InventoryTransactionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertInventoryTransaction(tx: InventoryTransactionEntity)
+}
+
+@Database(entities = [
+    InvoiceEntity::class,
+    LineItemEntity::class,
+    ProductEntity::class,
+    CustomerEntity::class,
+    SupplierEntity::class,
+    ExpenseEntity::class,
+    EmployeeEntity::class,
+    InventoryTransactionEntity::class
+], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun invoiceDao(): InvoiceDao
     abstract fun productDao(): ProductDao
+    abstract fun erpDao(): ErpDao
 
     companion object {
         @Volatile

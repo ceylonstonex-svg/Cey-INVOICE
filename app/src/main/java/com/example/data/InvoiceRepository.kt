@@ -4,10 +4,16 @@ import kotlinx.coroutines.flow.Flow
 
 class InvoiceRepository(
     private val invoiceDao: InvoiceDao,
-    private val productDao: ProductDao
+    private val productDao: ProductDao,
+    private val erpDao: ErpDao
 ) {
     val allInvoices: Flow<List<InvoiceWithLineItems>> = invoiceDao.getAllInvoices()
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
+    val allCustomers: Flow<List<CustomerEntity>> = erpDao.getAllCustomers()
+    val allSuppliers: Flow<List<SupplierEntity>> = erpDao.getAllSuppliers()
+    val allExpenses: Flow<List<ExpenseEntity>> = erpDao.getAllExpenses()
+    val allEmployees: Flow<List<EmployeeEntity>> = erpDao.getAllEmployees()
+    val allInventoryTransactions: Flow<List<InventoryTransactionEntity>> = erpDao.getAllInventoryTransactions()
 
     fun getInvoiceById(id: Int): Flow<InvoiceWithLineItems?> = invoiceDao.getInvoiceById(id)
 
@@ -29,6 +35,42 @@ class InvoiceRepository(
 
     suspend fun deleteProduct(product: ProductEntity) {
         productDao.deleteProduct(product)
+    }
+
+    suspend fun insertCustomer(customer: CustomerEntity) {
+        erpDao.insertCustomer(customer)
+    }
+
+    suspend fun deleteCustomer(customer: CustomerEntity) {
+        erpDao.deleteCustomer(customer)
+    }
+
+    suspend fun insertSupplier(supplier: SupplierEntity) {
+        erpDao.insertSupplier(supplier)
+    }
+
+    suspend fun deleteSupplier(supplier: SupplierEntity) {
+        erpDao.deleteSupplier(supplier)
+    }
+
+    suspend fun insertExpense(expense: ExpenseEntity) {
+        erpDao.insertExpense(expense)
+    }
+
+    suspend fun deleteExpense(expense: ExpenseEntity) {
+        erpDao.deleteExpense(expense)
+    }
+
+    suspend fun insertEmployee(employee: EmployeeEntity) {
+        erpDao.insertEmployee(employee)
+    }
+
+    suspend fun deleteEmployee(employee: EmployeeEntity) {
+        erpDao.deleteEmployee(employee)
+    }
+
+    suspend fun insertInventoryTransaction(tx: InventoryTransactionEntity) {
+        erpDao.insertInventoryTransaction(tx)
     }
 
     suspend fun restoreDatabase(

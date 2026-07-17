@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = InvoiceRepository(database.invoiceDao(), database.productDao())
+        val repository = InvoiceRepository(database.invoiceDao(), database.productDao(), database.erpDao())
         val internetService = InternetService()
         val pdfService = PdfService()
         val googleDriveService = com.example.data.GoogleDriveService(applicationContext)
@@ -540,7 +540,7 @@ fun InvoiceListScreen(viewModel: InvoiceViewModel) {
                     )
                 }
                 2 -> {
-                    SalesDashboardScreen(viewModel = viewModel)
+                    CeyvanaErpSuiteScreen(viewModel = viewModel)
                 }
                 3 -> {
                     SpicesReportsScreen(invoices = invoices)
