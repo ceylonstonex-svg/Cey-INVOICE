@@ -511,8 +511,9 @@ fun PosScreen(viewModel: InvoiceViewModel) {
         if (showAddProductDialog) {
             AddProductDialog(
                 onDismiss = { showAddProductDialog = false },
-                onConfirm = { name, price ->
-                    viewModel.saveProduct(name = name, pricePerGram = price)
+                onConfirm = { name, weight, price, stock ->
+                    val pricePerGram = if (weight > 0.0) price / weight else price
+                    viewModel.saveProduct(name = name, pricePerGram = pricePerGram, currentStock = stock)
                     showAddProductDialog = false
                 }
             )
@@ -1790,12 +1791,17 @@ suspend fun checkoutOrder(
 @Composable
 fun AddProductDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, Double) -> Unit
+    onConfirm: (String, Double, Double, Double) -> Unit // name, weight, price, stock
 ) {
     var productName by remember { mutableStateOf("") }
-    var pricePerGramStr by remember { mutableStateOf("") }
+    var weightStr by remember { mutableStateOf("100.0") }
+    var priceStr by remember { mutableStateOf("") }
+    var stockStr by remember { mutableStateOf("100.0") }
+
     var isNameError by remember { mutableStateOf(false) }
+    var isWeightError by remember { mutableStateOf(false) }
     var isPriceError by remember { mutableStateOf(false) }
+    var isStockError by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -1808,7 +1814,7 @@ fun AddProductDialog(
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1830,8 +1836,8 @@ fun AddProductDialog(
                 }
 
                 Text(
-                    text = "Add new product to the central spice database catalog.",
-                    fontSize = 12.sp,
+                    text = "Add new product to the central database catalog with name, weight, price, and current stock level.",
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
@@ -1850,40 +1856,120 @@ fun AddProductDialog(
                         focusedBorderColor = ForestMedium,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("product_name_input")
                 )
                 if (isNameError) {
                     Text(
-                        text = "කරුණාකර නිෂ්පාදන නම ඇතුළත් කරන්න",
+                        text = "කරුණාකර නිෂ්පාදන නම ඇතුළත් කරන්න (Name is required)",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 11.sp
                     )
                 }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = weightStr,
+                            onValueChange = { 
+                                weightStr = it
+                                isWeightError = false 
+                            },
+                            label = { Text("බර (Weight - g)", fontSize = 12.sp) },
+                            placeholder = { Text("e.g. 100") },
+                            singleLine = true,
+                            isError = isWeightError,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ForestMedium,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            modifier = Modifier.fillMaxWidth().testTag("product_weight_input")
+                        )
+                        if (isWeightError) {
+                            Text(
+                                text = "වලංගු බරක් (Invalid Weight)",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = priceStr,
+                            onValueChange = { 
+                                priceStr = it
+                                isPriceError = false 
+                            },
+                            label = { Text("මිල (Price - Rs.)", fontSize = 12.sp) },
+                            placeholder = { Text("e.g. 1250") },
+                            singleLine = true,
+                            isError = isPriceError,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ForestMedium,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            modifier = Modifier.fillMaxWidth().testTag("product_price_input")
+                        )
+                        if (isPriceError) {
+                            Text(
+                                text = "වලංගු මිලක් (Invalid Price)",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
-                    value = pricePerGramStr,
+                    value = stockStr,
                     onValueChange = { 
-                        pricePerGramStr = it
-                        isPriceError = false 
+                        stockStr = it
+                        isStockError = false 
                     },
-                    label = { Text("ග්‍රෑමයක මිල (Price per gram - Rs.)", fontSize = 12.sp) },
-                    placeholder = { Text("e.g. 12.5") },
+                    label = { Text("තොග ප්‍රමාණය (Quantity in Stock - g)", fontSize = 12.sp) },
+                    placeholder = { Text("e.g. 1000") },
                     singleLine = true,
-                    isError = isPriceError,
+                    isError = isStockError,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ForestMedium,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("product_stock_input")
                 )
-                if (isPriceError) {
+                if (isStockError) {
                     Text(
-                        text = "කරුණාකර වලංගු මිලක් ඇතුළත් කරන්න",
+                        text = "කරුණාකර තොග ප්‍රමාණය ඇතුළත් කරන්න (Invalid Stock)",
                         color = MaterialTheme.colorScheme.error,
                         fontSize = 11.sp
                     )
+                }
+
+                val weightVal = weightStr.toDoubleOrNull() ?: 0.0
+                val priceVal = priceStr.toDoubleOrNull() ?: 0.0
+                if (weightVal > 0.0 && priceVal > 0.0) {
+                    val ppg = priceVal / weightVal
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Estimated Price per gram: Rs. ${String.format(Locale.US, "%.3f", ppg)}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ForestMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
                 }
 
                 Row(
@@ -1901,21 +1987,34 @@ fun AddProductDialog(
                     Button(
                         onClick = {
                             val nameTrimmed = productName.trim()
-                            val priceDouble = pricePerGramStr.toDoubleOrNull()
+                            val weightVal = weightStr.toDoubleOrNull()
+                            val priceVal = priceStr.toDoubleOrNull()
+                            val stockVal = stockStr.toDoubleOrNull()
+
                             if (nameTrimmed.isEmpty()) {
                                 isNameError = true
                             }
-                            if (priceDouble == null || priceDouble <= 0.0) {
+                            if (weightVal == null || weightVal <= 0.0) {
+                                isWeightError = true
+                            }
+                            if (priceVal == null || priceVal <= 0.0) {
                                 isPriceError = true
                             }
+                            if (stockVal == null || stockVal < 0.0) {
+                                isStockError = true
+                            }
 
-                            if (nameTrimmed.isNotEmpty() && priceDouble != null && priceDouble > 0.0) {
-                                onConfirm(nameTrimmed, priceDouble)
+                            if (nameTrimmed.isNotEmpty() &&
+                                weightVal != null && weightVal > 0.0 &&
+                                priceVal != null && priceVal > 0.0 &&
+                                stockVal != null && stockVal >= 0.0
+                            ) {
+                                onConfirm(nameTrimmed, weightVal, priceVal, stockVal)
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = ForestPrimary),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1.2f)
+                        modifier = Modifier.weight(1.2f).testTag("save_product_button")
                     ) {
                         Text("සුරකින්න (Save)", color = Color.White, fontWeight = FontWeight.Bold)
                     }

@@ -142,7 +142,7 @@ class GoogleDriveService(private val context: Context) {
                 if (response.isSuccessful) {
                     val bodyStr = response.body?.string() ?: ""
                     val json = JSONObject(bodyStr)
-                    json.optString("id", null)
+                    if (json.has("id")) json.getString("id") else null
                 } else {
                     Log.e("GoogleDriveService", "Upload failed: ${response.code} ${response.message}")
                     null

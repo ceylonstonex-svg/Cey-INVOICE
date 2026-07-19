@@ -83,13 +83,13 @@ class InvoiceViewModel(
         }
     }
 
-    fun saveProduct(name: String, pricePerGram: Double, id: Int = 0) {
+    fun saveProduct(name: String, pricePerGram: Double, currentStock: Double = 100.0, id: Int = 0) {
         viewModelScope.launch {
             if (id == 0) {
-                repository.insertProduct(ProductEntity(name = name, pricePerGram = pricePerGram))
+                repository.insertProduct(ProductEntity(name = name, pricePerGram = pricePerGram, currentStock = currentStock))
                 _statusMessage.value = "Product '$name' added to catalog"
             } else {
-                repository.updateProduct(ProductEntity(id = id, name = name, pricePerGram = pricePerGram))
+                repository.updateProduct(ProductEntity(id = id, name = name, pricePerGram = pricePerGram, currentStock = currentStock))
                 _statusMessage.value = "Product '$name' updated"
             }
         }
