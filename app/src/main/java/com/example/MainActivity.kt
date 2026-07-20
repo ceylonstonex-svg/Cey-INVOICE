@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val database = AppDatabase.getDatabase(applicationContext)
-        val repository = InvoiceRepository(database.invoiceDao(), database.productDao(), database.erpDao())
+        val repository = InvoiceRepository(database.invoiceDao(), database.productDao(), database.erpDao(), database.financialDao())
         val internetService = InternetService()
         val pdfService = PdfService()
         val googleDriveService = com.example.data.GoogleDriveService(applicationContext)
@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val viewModel: InvoiceViewModel = viewModel(
-                        factory = InvoiceViewModelFactory(repository, internetService, pdfService, googleDriveService)
+                        factory = InvoiceViewModelFactory(application, repository, internetService, pdfService, googleDriveService)
                     )
                     androidx.compose.runtime.LaunchedEffect(Unit) {
                         viewModel.initGoogleDrive(applicationContext)
@@ -75,6 +75,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        com.example.ui.ZenMusicManager.stop()
     }
 }
 
@@ -553,22 +558,45 @@ fun InvoiceListScreen(viewModel: InvoiceViewModel) {
                 }
             }
 
-            if (selectedTab != 0) {
-                FloatingActionButton(
-                    onClick = { showGlobalCalculator = true },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = 16.dp)
-                        .size(48.dp)
-                        .testTag("global_calc_fab")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Calculate,
-                        contentDescription = "Open Calculator",
-                        modifier = Modifier.size(24.dp)
-                    )
+            val isMusicPlaying by com.example.ui.ZenMusicManager.isPlayingFlow.collectAsState()
+
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (selectedTab != 0) {
+                    FloatingActionButton(
+                        onClick = { showGlobalCalculator = true },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("global_calc_fab")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Calculate,
+                            contentDescription = "Open Calculator",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    FloatingActionButton(
+                        onClick = { com.example.ui.ZenMusicManager.togglePlay() },
+                        containerColor = if (isMusicPlaying) Color(0xFF0F2E20) else MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = if (isMusicPlaying) com.example.ui.theme.AccentGold else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("global_music_fab")
+                    ) {
+                        Icon(
+                            imageVector = if (isMusicPlaying) Icons.Default.MusicNote else Icons.Default.MusicOff,
+                            contentDescription = "Toggle Background Music",
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }

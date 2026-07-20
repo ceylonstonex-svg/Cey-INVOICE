@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.Flow
 class InvoiceRepository(
     private val invoiceDao: InvoiceDao,
     private val productDao: ProductDao,
-    private val erpDao: ErpDao
+    private val erpDao: ErpDao,
+    private val financialDao: FinancialDao
 ) {
     val allInvoices: Flow<List<InvoiceWithLineItems>> = invoiceDao.getAllInvoices()
     val allProducts: Flow<List<ProductEntity>> = productDao.getAllProducts()
@@ -14,6 +15,58 @@ class InvoiceRepository(
     val allExpenses: Flow<List<ExpenseEntity>> = erpDao.getAllExpenses()
     val allEmployees: Flow<List<EmployeeEntity>> = erpDao.getAllEmployees()
     val allInventoryTransactions: Flow<List<InventoryTransactionEntity>> = erpDao.getAllInventoryTransactions()
+
+    // Financial Module Flows
+    val allAccounts: Flow<List<CoaAccountEntity>> = financialDao.getAllAccounts()
+    val allJournalEntries: Flow<List<JournalEntryWithLines>> = financialDao.getAllJournalEntries()
+    val allCustomerReceivables: Flow<List<CustomerReceivableEntity>> = financialDao.getAllCustomerReceivables()
+    val allSupplierBills: Flow<List<SupplierBillEntity>> = financialDao.getAllSupplierBills()
+    val allFixedAssets: Flow<List<FixedAssetEntity>> = financialDao.getAllFixedAssets()
+    val allPayrollRecords: Flow<List<PayrollRecordEntity>> = financialDao.getAllPayrollRecords()
+    val allBudgets: Flow<List<BudgetEntity>> = financialDao.getAllBudgets()
+    val allAuditLogs: Flow<List<AuditLogEntity>> = financialDao.getAllAuditLogs()
+
+    suspend fun insertAccount(account: CoaAccountEntity) {
+        financialDao.insertAccount(account)
+    }
+
+    suspend fun updateAccount(account: CoaAccountEntity) {
+        financialDao.updateAccount(account)
+    }
+
+    suspend fun insertJournalEntry(entry: JournalEntryEntity, lines: List<JournalLineEntity>) {
+        val entryId = financialDao.insertJournalEntry(entry).toInt()
+        val linesWithId = lines.map { it.copy(entryId = entryId) }
+        financialDao.insertJournalLines(linesWithId)
+    }
+
+    suspend fun deleteAllJournalEntries() {
+        financialDao.deleteAllJournalEntries()
+    }
+
+    suspend fun insertCustomerReceivable(rec: CustomerReceivableEntity) {
+        financialDao.insertCustomerReceivable(rec)
+    }
+
+    suspend fun insertSupplierBill(bill: SupplierBillEntity) {
+        financialDao.insertSupplierBill(bill)
+    }
+
+    suspend fun insertFixedAsset(asset: FixedAssetEntity) {
+        financialDao.insertFixedAsset(asset)
+    }
+
+    suspend fun insertPayrollRecord(payroll: PayrollRecordEntity) {
+        financialDao.insertPayrollRecord(payroll)
+    }
+
+    suspend fun insertBudget(budget: BudgetEntity) {
+        financialDao.insertBudget(budget)
+    }
+
+    suspend fun insertAuditLog(log: AuditLogEntity) {
+        financialDao.insertAuditLog(log)
+    }
 
     fun getInvoiceById(id: Int): Flow<InvoiceWithLineItems?> = invoiceDao.getInvoiceById(id)
 

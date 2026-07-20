@@ -252,12 +252,22 @@ interface ErpDao {
     SupplierEntity::class,
     ExpenseEntity::class,
     EmployeeEntity::class,
-    InventoryTransactionEntity::class
-], version = 4, exportSchema = false)
+    InventoryTransactionEntity::class,
+    CoaAccountEntity::class,
+    JournalEntryEntity::class,
+    JournalLineEntity::class,
+    CustomerReceivableEntity::class,
+    SupplierBillEntity::class,
+    FixedAssetEntity::class,
+    PayrollRecordEntity::class,
+    BudgetEntity::class,
+    AuditLogEntity::class
+], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun invoiceDao(): InvoiceDao
     abstract fun productDao(): ProductDao
     abstract fun erpDao(): ErpDao
+    abstract fun financialDao(): FinancialDao
 
     companion object {
         @Volatile

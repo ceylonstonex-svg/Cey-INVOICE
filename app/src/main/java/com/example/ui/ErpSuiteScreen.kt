@@ -66,10 +66,12 @@ fun CeyvanaErpSuiteScreen(viewModel: InvoiceViewModel) {
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Module Header View
-        ERPHeader(
-            activeModule = activeModule,
-            onBack = { activeModule = "home" }
-        )
+        if (activeModule != "logistics" && activeModule != "automation") {
+            ERPHeader(
+                activeModule = activeModule,
+                onBack = { activeModule = "home" }
+            )
+        }
 
         AnimatedContent(
             targetState = activeModule,
@@ -89,6 +91,9 @@ fun CeyvanaErpSuiteScreen(viewModel: InvoiceViewModel) {
                 "expenses" -> ERPExpensesModule(viewModel = viewModel)
                 "employees" -> ERPEmployeesModule(viewModel = viewModel)
                 "settings" -> ERPSettingsModule(viewModel = viewModel)
+                "financials" -> FinancialModuleScreen(viewModel = viewModel, onBack = { activeModule = "home" })
+                "logistics" -> DeliveryManagementScreen(viewModel = viewModel, onBack = { activeModule = "home" })
+                "automation" -> AutomationManagementScreen(viewModel = viewModel, onBack = { activeModule = "home" })
                 else -> ERPHomeHub(onSelectModule = { activeModule = it }, viewModel = viewModel)
             }
         }
@@ -346,6 +351,17 @@ fun ERPHomeHub(onSelectModule: (String) -> Unit, viewModel: InvoiceViewModel) {
                         onClick = { onSelectModule("employees") }
                     )
                     ERPMenuCard(
+                        title = "Financials",
+                        subtitle = "Double-entry & Ledger",
+                        icon = Icons.Default.AccountBalance,
+                        color = Color(0xFF2E7D32),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onSelectModule("financials") }
+                    )
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ERPMenuCard(
                         title = "System Settings",
                         subtitle = "Barcodes & metadata",
                         icon = Icons.Default.Settings,
@@ -353,6 +369,26 @@ fun ERPHomeHub(onSelectModule: (String) -> Unit, viewModel: InvoiceViewModel) {
                         modifier = Modifier.weight(1f),
                         onClick = { onSelectModule("settings") }
                     )
+                    ERPMenuCard(
+                        title = "Logistics",
+                        subtitle = "Fleet & Deliveries",
+                        icon = Icons.Default.LocalShipping,
+                        color = Color(0xFFD4AF37),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onSelectModule("logistics") }
+                    )
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ERPMenuCard(
+                        title = "Automation Hub",
+                        subtitle = "Workflow Engines & AI",
+                        icon = Icons.Default.AutoAwesome,
+                        color = Color(0xFFC5A880),
+                        modifier = Modifier.weight(1f),
+                        onClick = { onSelectModule("automation") }
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

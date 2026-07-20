@@ -463,6 +463,184 @@ fun CeyvanaZenAromaVisualizer(
                     )
                 }
             }
+
+            // Beautiful Zen Background Music synthesizer
+            val isMusicPlaying by ZenMusicManager.isPlayingFlow.collectAsState()
+            val activeSoundscape by ZenMusicManager.currentSoundscape.collectAsState()
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF0C1B14), RoundedCornerShape(16.dp))
+                    .border(1.dp, ForestMedium.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                    .padding(12.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Header Row with title and animated Equalizer
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isMusicPlaying) Icons.Default.MusicNote else Icons.Default.MusicOff,
+                                contentDescription = "Music",
+                                tint = AccentGold,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "CEYVANA ZEN SYNTHESIZER",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                        
+                        // Animated equalizer bars
+                        AnimatedEqualizer(isPlaying = isMusicPlaying)
+                    }
+
+                    // Soundscape Selector Chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        ZenMusicManager.ZenSoundscape.values().forEach { landscape ->
+                            val isSelected = activeSoundscape == landscape
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (isSelected) AccentGold.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isSelected) AccentGold.copy(alpha = 0.6f) else Color.Transparent,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable {
+                                        ZenMusicManager.setSoundscape(landscape)
+                                        if (!isMusicPlaying) {
+                                            ZenMusicManager.start()
+                                        }
+                                    }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = landscape.title,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) AccentGold else Color.Gray
+                                )
+                            }
+                        }
+                    }
+
+                    // Controls Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = { ZenMusicManager.togglePlay() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isMusicPlaying) Color(0xFFC62828) else ForestPrimary,
+                                contentColor = Color.White
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isMusicPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (isMusicPlaying) "Pause" else "Play",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isMusicPlaying) "PAUSE ZEN" else "PLAY ZEN",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Text(
+                            text = activeSoundscape.desc,
+                            fontSize = 10.sp,
+                            color = ForestSage,
+                            modifier = Modifier.weight(1f),
+                            lineHeight = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AnimatedEqualizer(isPlaying: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "eq")
+    
+    val h1 by infiniteTransition.animateFloat(
+        initialValue = 4f,
+        targetValue = 20f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(450, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h1"
+    )
+    val h2 by infiniteTransition.animateFloat(
+        initialValue = 6f,
+        targetValue = 24f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(350, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h2"
+    )
+    val h3 by infiniteTransition.animateFloat(
+        initialValue = 5f,
+        targetValue = 18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h3"
+    )
+    val h4 by infiniteTransition.animateFloat(
+        initialValue = 3f,
+        targetValue = 22f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(400, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "h4"
+    )
+
+    Row(
+        modifier = Modifier.height(24.dp).padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        val bars = listOf(h1, h2, h3, h4)
+        bars.forEach { height ->
+            val finalHeight = if (isPlaying) height.dp else 4.dp
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(finalHeight)
+                    .background(AccentGold, RoundedCornerShape(1.5.dp))
+            )
         }
     }
 }
